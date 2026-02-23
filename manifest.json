@@ -2,7 +2,7 @@
   "name": "Precvičovanie násobilky",
   "short_name": "Násobilka",
   "description": "Aplikácia na precvičovanie násobilky",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#667eea",
   "theme_color": "#667eea",
