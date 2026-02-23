@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Násobilka">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>Precvičovanie násobilky</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 30px;
+            font-size: 2em;
+        }
+
+        .setup-screen, .game-screen {
+            display: none;
+        }
+
+        .setup-screen.active, .game-screen.active {
+            display: block;
+        }
+
+        .number-selection {
+            margin: 30px 0;
+        }
+
+        .number-selection h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+
+        .number-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+
+        .number-checkbox {
+            display: none;
+        }
+
+        .number-label {
+            background: #f0f0f0;
+            padding: 15px;
+            text-align: center;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1.2em;
+            font-weight: bold;
+            border: 3px solid transparent;
+        }
+
+        .number-label:hover {
+            background: #e0e0e0;
+            transform: translateY(-2px);
+        }
+
+        .number-checkbox:checked + .number-label {
+            background: #667eea;
+            color: white;
+            border-color: #764ba2;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        .btn:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .question-area {
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .question {
+            font-size: 3em;
+            color: #333;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+
+        .answer-input {
+            font-size: 2em;
+            padding: 15px;
+            text-align: center;
+            border: 3px solid #ddd;
+            border-radius: 10px;
+            width: 200px;
+            transition: all 0.3s;
+        }
+
+        .answer-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .answer-input.correct {
+            border-color: #28a745;
+            background: #d4edda;
+            color: #28a745;
+        }
+
+        .answer-input.incorrect {
+            border-color: #dc3545;
+            background: #f8d7da;
+            color: #dc3545;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .back-btn {
+            background: #6c757d;
+            margin-top: 20px;
+        }
+
+        .back-btn:hover {
+            background: #5a6268;
+        }
+
+        .error-message {
+            color: #dc3545;
+            text-align: center;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+
+        .celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-in;
+            overflow: hidden;
+        }
+
+        .celebration.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .celebration-content {
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .trophy-container {
+            position: relative;
+            display: inline-block;
+            animation: trophyEntrance 0.8s ease-out;
+        }
+
+        @keyframes trophyEntrance {
+            0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+            60% { transform: scale(1.2) rotate(10deg); }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .trophy {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 30px;
+            filter: drop-shadow(0 10px 30px rgba(255, 215, 0, 0.6));
+            animation: trophyFloat 2s ease-in-out infinite;
+        }
+
+        @keyframes trophyFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .trophy svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .congrats-text {
+            color: white;
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            animation: textPulse 1s ease-in-out infinite;
+        }
+
+        @keyframes textPulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+
+        .sparkle-item {
+            position: absolute;
+            font-size: 2em;
+            animation: sparkleAnim 1.5s ease-in-out infinite;
+        }
+
+        @keyframes sparkleAnim {
+            0%, 100% { opacity: 0; transform: scale(0) rotate(0deg); }
+            50% { opacity: 1; transform: scale(1.5) rotate(180deg); }
+        }
+
+        .confetti-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            top: -10px;
+            opacity: 0.8;
+            animation: confettiFall 3s linear infinite;
+        }
+
+        @keyframes confettiFall {
+            0% { top: -10px; transform: translateX(0) rotate(0deg); }
+            100% { top: 100vh; transform: translateX(100px) rotate(720deg); }
+        }
+
+        .hearts-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .heart {
+            position: absolute;
+            bottom: -50px;
+            font-size: 2em;
+            opacity: 0.9;
+            animation: heartFloat 4s ease-in infinite;
+        }
+
+        @keyframes heartFloat {
+            0% { bottom: -50px; opacity: 0.9; transform: translateX(0) rotate(0deg) scale(1); }
+            50% { transform: translateX(50px) rotate(180deg) scale(1.2); }
+            100% { bottom: 100vh; opacity: 0; transform: translateX(-20px) rotate(360deg) scale(0.8); }
+        }
+
+        .try-again {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(52, 73, 94, 0.95) 0%, rgba(44, 62, 80, 0.95) 100%);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-in;
+            overflow: hidden;
+        }
+
+        .try-again.active {
+            display: flex;
+        }
+
+        .try-again-content {
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        .sad-face {
+            font-size: 8em;
+            margin-bottom: 20px;
+            animation: sadFaceShake 0.5s ease-in-out;
+        }
+
+        @keyframes sadFaceShake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px) rotate(-5deg); }
+            75% { transform: translateX(10px) rotate(5deg); }
+        }
+
+        .try-again-text {
+            color: white;
+            font-size: 2.5em;
+            font-weight: bold;
+            text-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .rain-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .raindrop {
+            position: absolute;
+            top: -50px;
+            font-size: 1.5em;
+            opacity: 0.6;
+            animation: rainFall 2s linear infinite;
+        }
+
+        @keyframes rainFall {
+            0% { top: -50px; opacity: 0.6; }
+            100% { top: 100vh; opacity: 0; }
+        }
+
+        .lightning-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .lightning-bolt {
+            position: absolute;
+            font-size: 4em;
+            animation: lightningFlash 0.1s ease-in-out;
+        }
+
+        @keyframes lightningFlash {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; filter: drop-shadow(0 0 20px yellow); }
+        }
+
+        @media (max-width: 600px) {
+            .container { padding: 20px; }
+            h1 { font-size: 1.5em; }
+            .question { font-size: 2em; }
+            .answer-input { font-size: 1.5em; width: 150px; }
+            .number-grid { grid-template-columns: repeat(5, 1fr); gap: 8px; }
+            .number-label { padding: 10px; font-size: 1em; }
+            .congrats-text { font-size: 2em; }
+            .trophy { width: 150px; height: 150px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="celebration" id="celebration">
+        <div class="sparkle" id="sparkle"></div>
+        <div class="confetti-container" id="confettiContainer"></div>
+        <div class="hearts-container" id="heartsContainer"></div>
+        <div class="celebration-content">
+            <div class="trophy-container">
+                <div class="trophy">
+                    <svg viewBox="0 0 100 100">
+                        <path d="M50 10 L35 40 L5 45 L27.5 67 L22 97 L50 82 L78 97 L72.5 67 L95 45 L65 40 Z" 
+                              fill="gold" stroke="#DAA520" stroke-width="2"/>
+                    </svg>
+                </div>
+            </div>
+            <div class="congrats-text">SUPER! 🎉</div>
+        </div>
+    </div>
+
+    <div class="try-again" id="tryAgain">
+        <div class="rain-container" id="rain"></div>
+        <div class="lightning-container" id="lightning"></div>
+        <div class="try-again-content">
+            <div class="sad-face">😢</div>
+            <div class="try-again-text">Skús to znova!</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>⭐ Precvičovanie násobilky ⭐</h1>
+        
+        <div class="setup-screen active">
+            <div class="number-selection">
+                <h2>Vyber si čísla, ktoré chceš precvičovať:</h2>
+                <div class="number-grid">
+                    <input type="checkbox" id="num1" class="number-checkbox" value="1">
+                    <label for="num1" class="number-label">1</label>
+                    <input type="checkbox" id="num2" class="number-checkbox" value="2">
+                    <label for="num2" class="number-label">2</label>
+                    <input type="checkbox" id="num3" class="number-checkbox" value="3">
+                    <label for="num3" class="number-label">3</label>
+                    <input type="checkbox" id="num4" class="number-checkbox" value="4">
+                    <label for="num4" class="number-label">4</label>
+                    <input type="checkbox" id="num5" class="number-checkbox" value="5">
+                    <label for="num5" class="number-label">5</label>
+                    <input type="checkbox" id="num6" class="number-checkbox" value="6">
+                    <label for="num6" class="number-label">6</label>
+                    <input type="checkbox" id="num7" class="number-checkbox" value="7">
+                    <label for="num7" class="number-label">7</label>
+                    <input type="checkbox" id="num8" class="number-checkbox" value="8">
+                    <label for="num8" class="number-label">8</label>
+                    <input type="checkbox" id="num9" class="number-checkbox" value="9">
+                    <label for="num9" class="number-label">9</label>
+                    <input type="checkbox" id="num10" class="number-checkbox" value="10">
+                    <label for="num10" class="number-label">10</label>
+                </div>
+                <div class="error-message" id="errorMessage"></div>
+                <button class="btn" id="startBtn">Začať precvičovanie</button>
+            </div>
+        </div>
+
+        <div class="game-screen">
+            <div class="question-area">
+                <div class="question" id="question">5 × 7 = ?</div>
+                <input type="number" class="answer-input" id="answerInput" placeholder="?">
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-value" id="correctCount">0</div>
+                    <div class="stat-label">Správne</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="incorrectCount">0</div>
+                    <div class="stat-label">Nesprávne</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="totalCount">0</div>
+                    <div class="stat-label">Celkom</div>
+                </div>
+            </div>
+            <button class="btn back-btn" id="backBtn">Späť na nastavenie</button>
+        </div>
+    </div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        let selectedNumbers = [];
+        let currentQuestion = {};
+        let correctAnswers = 0;
+        let incorrectAnswers = 0;
+        let totalAnswers = 0;
+
+        const setupScreen = document.querySelector('.setup-screen');
+        const gameScreen = document.querySelector('.game-screen');
+        const startBtn = document.getElementById('startBtn');
+        const backBtn = document.getElementById('backBtn');
+        const answerInput = document.getElementById('answerInput');
+        const questionEl = document.getElementById('question');
+        const errorMessage = document.getElementById('errorMessage');
+        const celebration = document.getElementById('celebration');
+        const sparkleContainer = document.getElementById('sparkle');
+        const heartsContainer = document.getElementById('heartsContainer');
+        const confettiContainer = document.getElementById('confettiContainer');
+        const tryAgain = document.getElementById('tryAgain');
+        const rainContainer = document.getElementById('rain');
+
+        function showCelebration() {
+            sparkleContainer.innerHTML = '';
+            for (let i = 0; i < 20; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'sparkle-item';
+                sparkle.textContent = '✨';
+                sparkle.style.left = Math.random() * 100 + '%';
+                sparkle.style.top = Math.random() * 100 + '%';
+                sparkle.style.animationDelay = Math.random() * 1.5 + 's';
+                sparkleContainer.appendChild(sparkle);
+            }
+
+            confettiContainer.innerHTML = '';
+            const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'];
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 2 + 's';
+                confetti.style.animationDuration = (2 + Math.random() * 2) + 's';
+                confettiContainer.appendChild(confetti);
+            }
+
+            heartsContainer.innerHTML = '';
+            for (let i = 0; i < 10; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'heart';
+                heart.textContent = '💖';
+                heart.style.left = (Math.random() * 80 + 10) + '%';
+                heart.style.animationDelay = Math.random() * 2 + 's';
+                heart.style.animationDuration = (3 + Math.random() * 2) + 's';
+                heartsContainer.appendChild(heart);
+            }
+
+            celebration.classList.add('active');
+            setTimeout(() => celebration.classList.remove('active'), 2000);
+        }
+
+        function showTryAgain() {
+            rainContainer.innerHTML = '';
+            for (let i = 0; i < 25; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'raindrop';
+                drop.textContent = '💧';
+                drop.style.left = Math.random() * 100 + '%';
+                drop.style.animationDelay = Math.random() * 1 + 's';
+                drop.style.animationDuration = (1.5 + Math.random() * 0.5) + 's';
+                rainContainer.appendChild(drop);
+            }
+
+            const lightningContainer = document.getElementById('lightning');
+            lightningContainer.innerHTML = '';
+            
+            setTimeout(() => {
+                const bolt = document.createElement('div');
+                bolt.className = 'lightning-bolt';
+                bolt.textContent = '⚡';
+                bolt.style.left = (20 + Math.random() * 60) + '%';
+                bolt.style.top = '20%';
+                lightningContainer.appendChild(bolt);
+            }, 300);
+            
+            setTimeout(() => {
+                const bolt = document.createElement('div');
+                bolt.className = 'lightning-bolt';
+                bolt.textContent = '⚡';
+                bolt.style.left = (20 + Math.random() * 60) + '%';
+                bolt.style.top = '25%';
+                lightningContainer.appendChild(bolt);
+            }, 1000);
+
+            tryAgain.classList.add('active');
+            setTimeout(() => tryAgain.classList.remove('active'), 2000);
+        }
+
+        startBtn.addEventListener('click', () => {
+            selectedNumbers = [];
+            document.querySelectorAll('.number-checkbox:checked').forEach(checkbox => {
+                selectedNumbers.push(parseInt(checkbox.value));
+            });
+
+            if (selectedNumbers.length === 0) {
+                errorMessage.textContent = 'Prosím, vyber aspoň jedno číslo!';
+                return;
+            }
+
+            errorMessage.textContent = '';
+            setupScreen.classList.remove('active');
+            gameScreen.classList.add('active');
+            resetStats();
+            generateQuestion();
+            answerInput.focus();
+        });
+
+        backBtn.addEventListener('click', () => {
+            gameScreen.classList.remove('active');
+            setupScreen.classList.add('active');
+        });
+
+        function generateQuestion() {
+            const baseNumber = selectedNumbers[Math.floor(Math.random() * selectedNumbers.length)];
+            const multiplier = Math.floor(Math.random() * 10) + 1;
+
+            currentQuestion = {
+                num1: baseNumber,
+                num2: multiplier,
+                answer: baseNumber * multiplier
+            };
+
+            questionEl.textContent = `${currentQuestion.num1} × ${currentQuestion.num2} = ?`;
+            answerInput.value = '';
+            answerInput.className = 'answer-input';
+        }
+
+        answerInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                checkAnswer();
+            }
+        });
+
+        answerInput.addEventListener('input', () => {
+            answerInput.classList.remove('correct', 'incorrect');
+        });
+
+        function checkAnswer() {
+            const userAnswer = parseInt(answerInput.value);
+
+            if (isNaN(userAnswer) || answerInput.value === '') {
+                return;
+            }
+
+            if (userAnswer === currentQuestion.answer) {
+                answerInput.classList.add('correct');
+                answerInput.classList.remove('incorrect');
+                correctAnswers++;
+                totalAnswers++;
+                updateStats();
+                showCelebration();
+
+                setTimeout(() => {
+                    generateQuestion();
+                    answerInput.focus();
+                }, 2000);
+            } else {
+                answerInput.classList.add('incorrect');
+                answerInput.classList.remove('correct');
+                incorrectAnswers++;
+                totalAnswers++;
+                updateStats();
+                showTryAgain();
+                answerInput.value = '';
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('correctCount').textContent = correctAnswers;
+            document.getElementById('incorrectCount').textContent = incorrectAnswers;
+            document.getElementById('totalCount').textContent = totalAnswers;
+        }
+
+        function resetStats() {
+            correctAnswers = 0;
+            incorrectAnswers = 0;
+            totalAnswers = 0;
+            updateStats();
+        }
+    </script>
+</body>
+</html>
